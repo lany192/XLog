@@ -15,7 +15,7 @@ public final class XLog {
     private static String TAG = "XLog";
     private static boolean isDebug = true;
 
-    private static int methodCount = 2;
+    private static int methodCount = 1;
     private static boolean showThreadInfo = false;
     private static int methodOffset = 0;
 
@@ -39,14 +39,14 @@ public final class XLog {
     private static final int MIN_STACK_OFFSET = 3;
 
     /**
-     * Drawing toolbox
+     * 绘制边框
      */
     private static final char TOP_LEFT_CORNER = '╔';
     private static final char BOTTOM_LEFT_CORNER = '╚';
     private static final char MIDDLE_CORNER = '╟';
     private static final char HORIZONTAL_DOUBLE_LINE = '║';
     private static final String DOUBLE_DIVIDER = "════════════════════════════════════════════";
-    private static final String SINGLE_DIVIDER = "────────────────────────────────────────────";
+    private static final String SINGLE_DIVIDER = "─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ - - ";
     private static final String TOP_BORDER = TOP_LEFT_CORNER + DOUBLE_DIVIDER + DOUBLE_DIVIDER;
     private static final String BOTTOM_BORDER = BOTTOM_LEFT_CORNER + DOUBLE_DIVIDER + DOUBLE_DIVIDER;
     private static final String MIDDLE_BORDER = MIDDLE_CORNER + SINGLE_DIVIDER + SINGLE_DIVIDER;
@@ -58,7 +58,7 @@ public final class XLog {
     private static final ThreadLocal<Integer> localMethodCount = new ThreadLocal<>();
 
     public XLog() {
-        initTag(TAG);
+        init(TAG);
     }
 
     /**
@@ -66,7 +66,7 @@ public final class XLog {
      *
      * @param tag1 is the given string which will be used in XLog
      */
-    public static void initTag(String tag1) {
+    public static void init(String tag1) {
         if (tag1 == null) {
             throw new NullPointerException("tag may not be null");
         }
@@ -273,27 +273,29 @@ public final class XLog {
 
     private static void logChunk(int logType, String tag, String chunk) {
         String finalTag = formatTag(tag);
-        switch (logType) {
-            case ERROR:
-                Log.e(finalTag, chunk);
-                break;
-            case INFO:
-                Log.i(finalTag, chunk);
-                break;
-            case VERBOSE:
-                Log.v(finalTag, chunk);
-                break;
-            case WARN:
-                Log.w(finalTag, chunk);
-                break;
-            case ASSERT:
-                Log.wtf(finalTag, chunk);
-                break;
-            case DEBUG:
-                // Fall through, log debug by default
-            default:
-                Log.d(finalTag, chunk);
-                break;
+        if (isDebug) {
+            switch (logType) {
+                case ERROR:
+                    Log.e(finalTag, chunk);
+                    break;
+                case INFO:
+                    Log.i(finalTag, chunk);
+                    break;
+                case VERBOSE:
+                    Log.v(finalTag, chunk);
+                    break;
+                case WARN:
+                    Log.w(finalTag, chunk);
+                    break;
+                case ASSERT:
+                    Log.wtf(finalTag, chunk);
+                    break;
+                case DEBUG:
+                    // Fall through, log debug by default
+                default:
+                    Log.d(finalTag, chunk);
+                    break;
+            }
         }
     }
 
@@ -361,7 +363,8 @@ public final class XLog {
         showThreadInfo = true;
     }
 
-    public static void setSettings(boolean isShowThreadInfo, int methodCount1, int offset) {
+    public static void setSettings(boolean debug, boolean isShowThreadInfo, int methodCount1, int offset) {
+        isDebug = debug;
         showThreadInfo = isShowThreadInfo;
         if (methodCount1 < 0) {
             methodCount1 = 0;
@@ -369,5 +372,4 @@ public final class XLog {
         methodCount = methodCount1;
         methodOffset = offset;
     }
-
 }
