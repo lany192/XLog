@@ -2,6 +2,7 @@ package com.lany.xlog.sample;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+
 import com.lany.xlog.XLog;
 
 public class SampleActivity extends AppCompatActivity {
@@ -12,16 +13,13 @@ public class SampleActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
-        XLog.init(TAG)
-                .methodCount(3)                 // default 2
-                .showThreadInfo()               // default shown
-                .methodOffset(2);                // default 0
-
-        XLog.d("hello");
-        XLog.e("hello");
-        XLog.w("hello");
-        XLog.v("hello");
-        XLog.wtf("hello");
+        XLog.initTag(TAG);
+        XLog.setSettings(true, 3, 2);
+        XLog.d("hello1");
+        XLog.e("hello2");
+        XLog.w("hello3");
+        XLog.v("hello4");
+        XLog.wtf("hello5");
         XLog.json(json);
     }
 }
