@@ -16,7 +16,7 @@ public class SampleActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sample);
         XLog.init(TAG)
                 .methodCount(3)                 // default 2
-                .hideThreadInfo()               // default shown
+                .showThreadInfo()               // default shown
                 .methodOffset(2)                // default 0
                 .logAdapter(new AndroidLogAdapter()); //default AndroidLogAdapter
 

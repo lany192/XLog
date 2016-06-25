@@ -3,7 +3,7 @@ package com.lany.xlog;
 public final class XLog {
     private static final String TAG = "XLog";
 
-    private static Printer printer = new XLogPrinter();
+    private static XLogPrinter printer = new XLogPrinter();
 
     private XLog() {
     }
@@ -21,15 +21,15 @@ public final class XLog {
         printer.clear();
     }
 
-    public static Printer t(String tag) {
+    public static XLogPrinter t(String tag) {
         return printer.t(tag, printer.getSettings().getMethodCount());
     }
 
-    public static Printer t(int methodCount) {
+    public static XLogPrinter t(int methodCount) {
         return printer.t(null, methodCount);
     }
 
-    public static Printer t(String tag, int methodCount) {
+    public static XLogPrinter t(String tag, int methodCount) {
         return printer.t(tag, methodCount);
     }
 

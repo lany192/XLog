@@ -3,12 +3,12 @@ package com.lany.xlog;
 public final class Settings {
 
     private int methodCount = 2;
-    private boolean showThreadInfo = true;
+    private boolean showThreadInfo = false;
     private int methodOffset = 0;
     private LogAdapter logAdapter;
 
-    public Settings hideThreadInfo() {
-        showThreadInfo = false;
+    public Settings showThreadInfo() {
+        showThreadInfo = true;
         return this;
     }
 

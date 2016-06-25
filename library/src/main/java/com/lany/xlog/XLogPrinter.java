@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.UnknownHostException;
 
-final class XLogPrinter implements Printer {
+final class XLogPrinter{
 
     private static final String DEFAULT_TAG = "XLog";
 
@@ -77,7 +77,6 @@ final class XLogPrinter implements Printer {
      *
      * @param tag is the given string which will be used in XLog
      */
-    @Override
     public Settings init(String tag) {
         if (tag == null) {
             throw new NullPointerException("tag may not be null");
@@ -89,13 +88,11 @@ final class XLogPrinter implements Printer {
         return settings;
     }
 
-    @Override
     public Settings getSettings() {
         return settings;
     }
 
-    @Override
-    public Printer t(String tag, int methodCount) {
+    public XLogPrinter t(String tag, int methodCount) {
         if (tag != null) {
             localTag.set(tag);
         }
@@ -103,17 +100,14 @@ final class XLogPrinter implements Printer {
         return this;
     }
 
-    @Override
     public void d(String message, Object... args) {
         log(DEBUG, message, args);
     }
 
-    @Override
     public void e(String message, Object... args) {
         e(null, message, args);
     }
 
-    @Override
     public void e(Throwable throwable, String message, Object... args) {
         if (throwable != null && message != null) {
             message += " : " + getStackTraceString(throwable);
@@ -127,22 +121,18 @@ final class XLogPrinter implements Printer {
         log(ERROR, message, args);
     }
 
-    @Override
     public void w(String message, Object... args) {
         log(WARN, message, args);
     }
 
-    @Override
     public void i(String message, Object... args) {
         log(INFO, message, args);
     }
 
-    @Override
     public void v(String message, Object... args) {
         log(VERBOSE, message, args);
     }
 
-    @Override
     public void wtf(String message, Object... args) {
         log(ASSERT, message, args);
     }
@@ -152,7 +142,6 @@ final class XLogPrinter implements Printer {
      *
      * @param json the json content
      */
-    @Override
     public void json(String json) {
         if (TextUtils.isEmpty(json)) {
             d("Empty/Null json content");
@@ -200,7 +189,6 @@ final class XLogPrinter implements Printer {
         return sw.toString();
     }
 
-    @Override
     public void clear() {
         settings.reset();
     }
