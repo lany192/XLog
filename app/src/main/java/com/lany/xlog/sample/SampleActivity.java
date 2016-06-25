@@ -2,8 +2,6 @@ package com.lany.xlog.sample;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-
-import com.lany.xlog.AndroidLogAdapter;
 import com.lany.xlog.XLog;
 
 public class SampleActivity extends AppCompatActivity {
@@ -17,8 +15,7 @@ public class SampleActivity extends AppCompatActivity {
         XLog.init(TAG)
                 .methodCount(3)                 // default 2
                 .showThreadInfo()               // default shown
-                .methodOffset(2)                // default 0
-                .logAdapter(new AndroidLogAdapter()); //default AndroidLogAdapter
+                .methodOffset(2);                // default 0
 
         XLog.d("hello");
         XLog.e("hello");

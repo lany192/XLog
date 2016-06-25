@@ -1,11 +1,9 @@
 package com.lany.xlog;
 
 public final class Settings {
-
     private int methodCount = 2;
     private boolean showThreadInfo = false;
     private int methodOffset = 0;
-    private LogAdapter logAdapter;
 
     public Settings showThreadInfo() {
         showThreadInfo = true;
@@ -25,11 +23,6 @@ public final class Settings {
         return this;
     }
 
-    public Settings logAdapter(LogAdapter logAdapter) {
-        this.logAdapter = logAdapter;
-        return this;
-    }
-
     public int getMethodCount() {
         return methodCount;
     }
@@ -40,13 +33,6 @@ public final class Settings {
 
     public int getMethodOffset() {
         return methodOffset;
-    }
-
-    public LogAdapter getLogAdapter() {
-        if (logAdapter == null) {
-            logAdapter = new AndroidLogAdapter();
-        }
-        return logAdapter;
     }
 
     public void reset() {

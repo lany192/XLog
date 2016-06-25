@@ -1,6 +1,7 @@
 package com.lany.xlog;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -10,9 +11,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.UnknownHostException;
 
-final class XLogPrinter{
-
-    private static final String DEFAULT_TAG = "XLog";
+final class XLogPrinter {
+    private static final String TAG = "XLog";
 
     private static final int DEBUG = 3;
     private static final int ERROR = 6;
@@ -69,7 +69,7 @@ final class XLogPrinter{
     private final Settings settings = new Settings();
 
     public XLogPrinter() {
-        init(DEFAULT_TAG);
+        init(TAG);
     }
 
     /**
@@ -290,24 +290,24 @@ final class XLogPrinter{
         String finalTag = formatTag(tag);
         switch (logType) {
             case ERROR:
-                settings.getLogAdapter().e(finalTag, chunk);
+                Log.e(finalTag, chunk);
                 break;
             case INFO:
-                settings.getLogAdapter().i(finalTag, chunk);
+                Log.i(finalTag, chunk);
                 break;
             case VERBOSE:
-                settings.getLogAdapter().v(finalTag, chunk);
+                Log.v(finalTag, chunk);
                 break;
             case WARN:
-                settings.getLogAdapter().w(finalTag, chunk);
+                Log.w(finalTag, chunk);
                 break;
             case ASSERT:
-                settings.getLogAdapter().wtf(finalTag, chunk);
+                Log.wtf(finalTag, chunk);
                 break;
             case DEBUG:
                 // Fall through, log debug by default
             default:
-                settings.getLogAdapter().d(finalTag, chunk);
+                Log.d(finalTag, chunk);
                 break;
         }
     }
