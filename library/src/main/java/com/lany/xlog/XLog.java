@@ -1,5 +1,9 @@
 package com.lany.xlog;
 
+
+import android.app.Application;
+import android.content.Context;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -7,369 +11,501 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.UnknownHostException;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 public final class XLog {
-    private static String TAG = "XLog";
-    private static boolean isDebug = true;
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    public static final String NULL_TIPS = "Log with null object";
+    private static final String DEFAULT_MESSAGE = "execute";
+    private static final String PARAM = "Param";
+    private static final String NULL = "null";
+    private static final String TAG_DEFAULT = "XLog";
+    private static final String SUFFIX = ".java";
+    public static final int JSON_INDENT = 4;
+    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
+            "yyyy-MM-dd", Locale.getDefault());
+    private static SimpleDateFormat simpleTimeFormat = new SimpleDateFormat(
+            "HH:mm:ss", Locale.getDefault());
+    public static final int V = 0x1;
+    public static final int D = 0x2;
+    public static final int I = 0x3;
+    public static final int W = 0x4;
+    public static final int E = 0x5;
+    public static final int A = 0x6;
+    private static final int JSON = 0x7;
+    private static final int XML = 0x8;
 
-    private static int methodCount = 1;
-    private static boolean showThreadInfo = false;
-    private static int methodOffset = 0;
+    private static final int STACK_TRACE_INDEX = 5;
 
-    private static final int DEBUG = 3;
-    private static final int ERROR = 6;
-    private static final int ASSERT = 7;
-    private static final int INFO = 4;
-    private static final int VERBOSE = 2;
-    private static final int WARN = 5;
+    private static String mGlobalTag;
+    private static boolean mIsGlobalTagEmpty = true;
+    private static boolean IS_SHOW_LOG = true;
 
-    /**
-     * Android's max limit for a log entry is ~4076 bytes,
-     * so 4000 bytes is used as chunk size since default charset
-     * is UTF-8
-     */
-    private static final int CHUNK_SIZE = 4000;
+    private static Context mContext;
+    private final static int DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
 
-    /**
-     * The minimum stack trace index, starts at this class after two native calls.
-     */
-    private static final int MIN_STACK_OFFSET = 3;
-
-    /**
-     * 绘制边框
-     */
-    private static final char TOP_LEFT_CORNER = '╔';
-    private static final char BOTTOM_LEFT_CORNER = '╚';
-    private static final char MIDDLE_CORNER = '╟';
-    private static final char HORIZONTAL_DOUBLE_LINE = '║';
-    private static final String DOUBLE_DIVIDER = "════════════════════════════════════════════";
-    private static final String SINGLE_DIVIDER = "─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ - - ";
-    private static final String TOP_BORDER = TOP_LEFT_CORNER + DOUBLE_DIVIDER + DOUBLE_DIVIDER;
-    private static final String BOTTOM_BORDER = BOTTOM_LEFT_CORNER + DOUBLE_DIVIDER + DOUBLE_DIVIDER;
-    private static final String MIDDLE_BORDER = MIDDLE_CORNER + SINGLE_DIVIDER + SINGLE_DIVIDER;
-
-    /**
-     * Localize single tag and method count for each thread
-     */
-    private static final ThreadLocal<String> localTag = new ThreadLocal<>();
-    private static final ThreadLocal<Integer> localMethodCount = new ThreadLocal<>();
-
-    public XLog() {
-        init(TAG);
+    public static void init(Application app, boolean isShowLog, @Nullable String tag) {
+        mContext = app.getApplicationContext();
+        IS_SHOW_LOG = isShowLog;
+        IS_SHOW_LOG = isShowLog;
+        mGlobalTag = tag;
+        mIsGlobalTagEmpty = TextUtils.isEmpty(mGlobalTag);
     }
 
-    /**
-     * It is used to change the tag
-     *
-     * @param tag1 is the given string which will be used in XLog
-     */
-    public static void init(String tag1) {
-        if (tag1 == null) {
-            throw new NullPointerException("tag may not be null");
-        }
-        if (tag1.trim().length() == 0) {
-            throw new IllegalStateException("tag may not be empty");
-        }
-        TAG = tag1;
+    public static void v() {
+        printLog(V, null, DEFAULT_MESSAGE);
     }
 
-    public XLog t(String tag, int methodCount) {
-        if (tag != null) {
-            localTag.set(tag);
-        }
-        localMethodCount.set(methodCount);
-        return this;
+    public static void v(Object msg) {
+        printLog(V, null, msg);
     }
 
-    public static void d(String message, Object... args) {
-        log(DEBUG, message, args);
+    public static void v(String tag, Object... objects) {
+        printLog(V, tag, objects);
     }
 
-    public static void e(String message, Object... args) {
-        e(null, message, args);
+    public static void d() {
+        printLog(D, null, DEFAULT_MESSAGE);
     }
 
-    public static void e(Throwable throwable, String message, Object... args) {
-        if (throwable != null && message != null) {
-            message += " : " + getStackTraceString(throwable);
-        }
-        if (throwable != null && message == null) {
-            message = getStackTraceString(throwable);
-        }
-        if (message == null) {
-            message = "No message/exception is set";
-        }
-        log(ERROR, message, args);
+    public static void d(Object msg) {
+        printLog(D, null, msg);
     }
 
-    public static void w(String message, Object... args) {
-        log(WARN, message, args);
+    public static void d(String tag, Object... objects) {
+        printLog(D, tag, objects);
     }
 
-    public static void i(String message, Object... args) {
-        log(INFO, message, args);
+    public static void i() {
+        printLog(I, null, DEFAULT_MESSAGE);
     }
 
-    public static void v(String message, Object... args) {
-        log(VERBOSE, message, args);
+    public static void i(Object msg) {
+        printLog(I, null, msg);
     }
 
-    public static void wtf(String message, Object... args) {
-        log(ASSERT, message, args);
+    public static void i(String tag, Object... objects) {
+        printLog(I, tag, objects);
     }
 
-    /**
-     * Formats the json content and print it
-     *
-     * @param json the json content
-     */
-    public static void json(String json) {
-        if (TextUtils.isEmpty(json)) {
-            d("Empty/Null json content");
+    public static void w() {
+        printLog(W, null, DEFAULT_MESSAGE);
+    }
+
+    public static void w(Object msg) {
+        printLog(W, null, msg);
+    }
+
+    public static void w(String tag, Object... objects) {
+        printLog(W, tag, objects);
+    }
+
+    public static void e() {
+        printLog(E, null, DEFAULT_MESSAGE);
+    }
+
+    public static void e(Object msg) {
+        printLog(E, null, msg);
+    }
+
+    public static void e(String tag, Object... objects) {
+        printLog(E, tag, objects);
+    }
+
+    public static void a() {
+        printLog(A, null, DEFAULT_MESSAGE);
+    }
+
+    public static void a(Object msg) {
+        printLog(A, null, msg);
+    }
+
+    public static void a(String tag, Object... objects) {
+        printLog(A, tag, objects);
+    }
+
+    public static void json(String jsonFormat) {
+        printLog(JSON, null, jsonFormat);
+    }
+
+    public static void json(String tag, String jsonFormat) {
+        printLog(JSON, tag, jsonFormat);
+    }
+
+    public static void xml(String xml) {
+        printLog(XML, null, xml);
+    }
+
+    public static void xml(String tag, String xml) {
+        printLog(XML, tag, xml);
+    }
+
+    public static void file(File targetDirectory, Object msg) {
+        printFile(null, targetDirectory, null, msg);
+    }
+
+    public static void file(String tag, File targetDirectory, Object msg) {
+        printFile(tag, targetDirectory, null, msg);
+    }
+
+    public static void file(String tag, File targetDirectory, String fileName, Object msg) {
+        printFile(tag, targetDirectory, fileName, msg);
+    }
+
+    private static void printLog(int type, String tagStr, Object... objects) {
+        if (!IS_SHOW_LOG) {
             return;
         }
+        String[] contents = wrapperContent(tagStr, objects);
+        String tag = contents[0];
+        String msg = contents[1];
+        String headString = contents[2];
+        switch (type) {
+            case V:
+            case D:
+            case I:
+            case W:
+            case E:
+            case A:
+                printDefault(type, tag, headString + msg);
+                break;
+            case JSON:
+                printJson(tag, msg, headString);
+                break;
+            case XML:
+                printXml(tag, msg, headString);
+                break;
+        }
+    }
+
+    private static void printFile(String tagStr, File targetDirectory, String fileName, Object objectMsg) {
+        if (!IS_SHOW_LOG) {
+            return;
+        }
+        String[] contents = wrapperContent(tagStr, objectMsg);
+        String tag = contents[0];
+        String msg = contents[1];
+        String headString = contents[2];
+        printFile(tag, targetDirectory, fileName, headString, msg);
+    }
+
+    private static String[] wrapperContent(String tagStr, Object... objects) {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        StackTraceElement targetElement = stackTrace[STACK_TRACE_INDEX];
+        String className = targetElement.getClassName();
+        String[] classNameInfo = className.split("\\.");
+        if (classNameInfo.length > 0) {
+            className = classNameInfo[classNameInfo.length - 1] + SUFFIX;
+        }
+        if (className.contains("$")) {
+            className = className.split("\\$")[0] + SUFFIX;
+        }
+        String methodName = targetElement.getMethodName();
+        int lineNumber = targetElement.getLineNumber();
+        if (lineNumber < 0) {
+            lineNumber = 0;
+        }
+        String methodNameShort = methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
+        String tag = (tagStr == null ? className : tagStr);
+        if (mIsGlobalTagEmpty && TextUtils.isEmpty(tag)) {
+            tag = TAG_DEFAULT;
+        } else if (!mIsGlobalTagEmpty) {
+            tag = mGlobalTag;
+        }
+        String msg = (objects == null) ? NULL_TIPS : getObjectsString(objects);
+        String headString = "[ (" + className + ":" + lineNumber + ")#" + methodNameShort + " ] ";
+        return new String[]{tag, msg, headString};
+    }
+
+    private static String getObjectsString(Object... objects) {
+        if (objects.length > 1) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("\n");
+            for (int i = 0; i < objects.length; i++) {
+                Object object = objects[i];
+                if (object == null) {
+                    stringBuilder.append(PARAM).append("[").append(i).append("]").append(" = ").append(NULL).append("\n");
+                } else {
+                    stringBuilder.append(PARAM).append("[").append(i).append("]").append(" = ").append(object.toString()).append("\n");
+                }
+            }
+            return stringBuilder.toString();
+        } else {
+            Object object = objects[0];
+            return object == null ? NULL : object.toString();
+        }
+    }
+
+    public static void printDefault(int type, String tag, String msg) {
+        int index = 0;
+        int maxLength = 4000;
+        int countOfSub = msg.length() / maxLength;
+        if (countOfSub > 0) {
+            for (int i = 0; i < countOfSub; i++) {
+                String sub = msg.substring(index, index + maxLength);
+                print(type, tag, sub);
+                index += maxLength;
+            }
+            print(type, tag, msg.substring(index, msg.length()));
+        } else {
+            print(type, tag, msg);
+        }
+    }
+
+    private static void print(int type, String tag, String msg) {
+        logToFile(TAG_DEFAULT, tag, msg, null);
+        switch (type) {
+            case XLog.V:
+                Log.v(tag, msg);
+                break;
+            case XLog.D:
+                Log.d(tag, msg);
+                break;
+            case XLog.I:
+                Log.i(tag, msg);
+                break;
+            case XLog.W:
+                Log.w(tag, msg);
+                break;
+            case XLog.E:
+                Log.e(tag, msg);
+                break;
+            case XLog.A:
+                Log.wtf(tag, msg);
+                break;
+        }
+    }
+
+    public static void printJson(String tag, String msg, String headString) {
+        String message;
         try {
-            int jsonIndent = 2;
-            json = json.trim();
-            if (json.startsWith("{")) {
-                JSONObject jsonObject = new JSONObject(json);
-                String message = jsonObject.toString(jsonIndent);
-                d(message);
-                return;
+            if (msg.startsWith("{")) {
+                JSONObject jsonObject = new JSONObject(msg);
+                message = jsonObject.toString(XLog.JSON_INDENT);
+            } else if (msg.startsWith("[")) {
+                JSONArray jsonArray = new JSONArray(msg);
+                message = jsonArray.toString(XLog.JSON_INDENT);
+            } else {
+                message = msg;
             }
-            if (json.startsWith("[")) {
-                JSONArray jsonArray = new JSONArray(json);
-                String message = jsonArray.toString(jsonIndent);
-                d(message);
-                return;
-            }
-            e("Invalid Json");
         } catch (JSONException e) {
-            e("Invalid Json");
+            message = msg;
         }
-    }
-
-    private static String getStackTraceString(Throwable tr) {
-        if (tr == null) {
-            return "";
-        }
-
-        // This is to reduce the amount of log spew that apps do in the non-error
-        // condition of the network being unavailable.
-        Throwable t = tr;
-        while (t != null) {
-            if (t instanceof UnknownHostException) {
-                return "";
-            }
-            t = t.getCause();
-        }
-
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        tr.printStackTrace(pw);
-        pw.flush();
-        return sw.toString();
-    }
-
-    public void clear() {
-        reset();
-    }
-
-    /**
-     * This method is synchronized in order to avoid messy of logs' order.
-     */
-    private static synchronized void log(int logType, String msg, Object... args) {
-        String tag = getTag();
-        String message = createMessage(msg, args);
-        int methodCount = getMethodCount();
-
-        if (TextUtils.isEmpty(message)) {
-            message = "Empty/NULL log message";
-        }
-
-        logTopBorder(logType, tag);
-        logHeaderContent(logType, tag, methodCount);
-
-        //get bytes of message with system's default charset (which is UTF-8 for Android)
-        byte[] bytes = message.getBytes();
-        int length = bytes.length;
-        if (length <= CHUNK_SIZE) {
-            if (methodCount > 0) {
-                logDivider(logType, tag);
-            }
-            logContent(logType, tag, message);
-            logBottomBorder(logType, tag);
-            return;
-        }
-        if (methodCount > 0) {
-            logDivider(logType, tag);
-        }
-        for (int i = 0; i < length; i += CHUNK_SIZE) {
-            int count = Math.min(length - i, CHUNK_SIZE);
-            //create a new String with system's default charset (which is UTF-8 for Android)
-            logContent(logType, tag, new String(bytes, i, count));
-        }
-        logBottomBorder(logType, tag);
-    }
-
-    private static void logTopBorder(int logType, String tag) {
-        logChunk(logType, tag, TOP_BORDER);
-    }
-
-    private static void logHeaderContent(int logType, String tag, int methodCount) {
-        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-        if (showThreadInfo) {
-            logChunk(logType, tag, HORIZONTAL_DOUBLE_LINE + " Thread: " + Thread.currentThread().getName());
-            logDivider(logType, tag);
-        }
-        String level = "";
-
-        int stackOffset = getStackOffset(trace) + methodOffset;
-
-        //corresponding method count with the current stack may exceeds the stack trace. Trims the count
-        if (methodCount + stackOffset > trace.length) {
-            methodCount = trace.length - stackOffset - 1;
-        }
-
-        for (int i = methodCount; i > 0; i--) {
-            int stackIndex = i + stackOffset;
-            if (stackIndex >= trace.length) {
-                continue;
-            }
-            StringBuilder builder = new StringBuilder();
-            builder.append("║ ")
-                    .append(level)
-                    .append(getSimpleClassName(trace[stackIndex].getClassName()))
-                    .append(".")
-                    .append(trace[stackIndex].getMethodName())
-                    .append(" ")
-                    .append(" (")
-                    .append(trace[stackIndex].getFileName())
-                    .append(":")
-                    .append(trace[stackIndex].getLineNumber())
-                    .append(")");
-            level += "   ";
-            logChunk(logType, tag, builder.toString());
-        }
-    }
-
-    private static void logBottomBorder(int logType, String tag) {
-        logChunk(logType, tag, BOTTOM_BORDER);
-    }
-
-    private static void logDivider(int logType, String tag) {
-        logChunk(logType, tag, MIDDLE_BORDER);
-    }
-
-    private static void logContent(int logType, String tag, String chunk) {
-        String[] lines = chunk.split(System.getProperty("line.separator"));
+        Log.d(tag, "╔═══════════════════════════════════════════════════════════════════════════════════════");
+        message = headString + LINE_SEPARATOR + message;
+        String[] lines = message.split(LINE_SEPARATOR);
         for (String line : lines) {
-            logChunk(logType, tag, HORIZONTAL_DOUBLE_LINE + " " + line);
+            Log.d(tag, "║ " + line);
+        }
+        Log.d(tag, "╚═══════════════════════════════════════════════════════════════════════════════════════");
+    }
+
+    public static void printXml(String tag, String xml, String headString) {
+        if (xml != null) {
+            xml = formatXML(xml);
+            xml = headString + "\n" + xml;
+        } else {
+            xml = headString + XLog.NULL_TIPS;
+        }
+        Log.d(tag, "╔═══════════════════════════════════════════════════════════════════════════════════════");
+        String[] lines = xml.split(XLog.LINE_SEPARATOR);
+        for (String line : lines) {
+            if (!(TextUtils.isEmpty(line) || line.equals("\n") || line.equals("\t") || TextUtils.isEmpty(line.trim()))) {
+                Log.d(tag, "║ " + line);
+            }
+        }
+        Log.d(tag, "╚═══════════════════════════════════════════════════════════════════════════════════════");
+    }
+
+    private static String formatXML(String inputXML) {
+        try {
+            Source xmlInput = new StreamSource(new StringReader(inputXML));
+            StreamResult xmlOutput = new StreamResult(new StringWriter());
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            transformer.transform(xmlInput, xmlOutput);
+            return xmlOutput.getWriter().toString().replaceFirst(">", ">\n");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return inputXML;
         }
     }
 
-    private static void logChunk(int logType, String tag, String chunk) {
-        String finalTag = formatTag(tag);
-        if (isDebug) {
-            switch (logType) {
-                case ERROR:
-                    Log.e(finalTag, chunk);
-                    break;
-                case INFO:
-                    Log.i(finalTag, chunk);
-                    break;
-                case VERBOSE:
-                    Log.v(finalTag, chunk);
-                    break;
-                case WARN:
-                    Log.w(finalTag, chunk);
-                    break;
-                case ASSERT:
-                    Log.wtf(finalTag, chunk);
-                    break;
-                case DEBUG:
-                    // Fall through, log debug by default
-                default:
-                    Log.d(finalTag, chunk);
-                    break;
+    public static void printFile(String tag, File targetDirectory, String fileName, String headString, String msg) {
+        fileName = (fileName == null) ? getLogFileName(new Date()) : fileName;
+        if (save(targetDirectory, fileName, msg)) {
+            Log.d(tag, headString + " save log success ! location is >>>" + targetDirectory.getAbsolutePath() + "/" + fileName);
+        } else {
+            Log.e(tag, headString + "save log fails !");
+        }
+    }
+
+    private static boolean save(File dic, String fileName, String msg) {
+        File file = new File(dic, fileName);
+        try {
+            OutputStream outputStream = new FileOutputStream(file);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream, "UTF-8");
+            outputStreamWriter.write(msg);
+            outputStreamWriter.flush();
+            outputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public static String getLogFileName(Date date) {
+        return TAG_DEFAULT + simpleDateFormat.format(date) + ".txt";
+    }
+
+    private static synchronized void logToFile(String level, String tag,
+                                               String msg, Throwable tr) {
+        Date now = new Date();
+        String fileName = getLogFileName(now);
+        FileOutputStream outputStream = null;
+        try {
+            outputStream = mContext.openFileOutput(fileName,
+                    Context.MODE_PRIVATE | Context.MODE_APPEND);
+            StringBuilder sb = new StringBuilder();
+            sb.append(level);
+            sb.append(" ");
+            sb.append(simpleTimeFormat.format(now));
+            sb.append(" ");
+            sb.append(tag);
+            sb.append(" ");
+            sb.append(msg);
+            if (tr != null) {
+                sb.append("\n");
+                StringWriter sw = new StringWriter();
+                tr.printStackTrace(new PrintWriter(sw, true));
+                sb.append(sw.toString());
+            }
+            sb.append("\n");
+            outputStream.write(sb.toString().getBytes());
+            outputStream.flush();
+        } catch (Exception e) {
+            Log.e(TAG_DEFAULT, "添加日志异常", e);
+        } finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    Log.e(TAG_DEFAULT, "关闭日志文件异常", e);
+                }
             }
         }
     }
 
-    private static String getSimpleClassName(String name) {
-        int lastIndex = name.lastIndexOf(".");
-        return name.substring(lastIndex + 1);
-    }
-
-    private static String formatTag(String tag1) {
-        if (!TextUtils.isEmpty(tag1) && !TextUtils.equals(TAG, tag1)) {
-            return TAG + "-" + tag1;
-        }
-        return TAG;
-    }
-
-    /**
-     * @return the appropriate tag based on local or global
-     */
-    private static String getTag() {
-        String tag1 = localTag.get();
-        if (tag1 != null) {
-            localTag.remove();
-            return tag1;
-        }
-        return TAG;
-    }
-
-    private static String createMessage(String message, Object... args) {
-        return args == null || args.length == 0 ? message : String.format(message, args);
-    }
-
-    private static int getMethodCount() {
-        Integer count = localMethodCount.get();
-        int result = methodCount;
-        if (count != null) {
-            localMethodCount.remove();
-            result = count;
-        }
-        if (result < 0) {
-            throw new IllegalStateException("methodCount cannot be negative");
-        }
-        return result;
-    }
-
-    /**
-     * Determines the starting index of the stack trace, after method calls made by this class.
-     *
-     * @param trace the stack trace
-     * @return the stack offset
-     */
-    private static int getStackOffset(StackTraceElement[] trace) {
-        for (int i = MIN_STACK_OFFSET; i < trace.length; i++) {
-            StackTraceElement e = trace[i];
-            String name = e.getClassName();
-            if (!name.equals(XLog.class.getName())) {
-                return --i;
+    public static synchronized String getLogText(Date date) {
+        String fileName = getLogFileName(date);
+        FileInputStream inputStream = null;
+        StringBuilder sb = new StringBuilder();
+        try {
+            inputStream = mContext.openFileInput(fileName);
+            byte[] buffer = new byte[10240];
+            while (true) {
+                int len = inputStream.read(buffer);
+                if (len <= 0) {
+                    break;
+                }
+                sb.append(new String(buffer, 0, len));
+            }
+            inputStream.close();
+        } catch (FileNotFoundException e) {
+            return "未找到对应的日志文件";
+        } catch (Exception e) {
+            Log.e(TAG_DEFAULT, "获取日志文本异常", e);
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw, true));
+            return sw.toString();
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    Log.e(TAG_DEFAULT, "获取日志文本异常", e);
+                }
             }
         }
-        return -1;
+        return sb.toString();
     }
 
-    public void reset() {
-        methodCount = 2;
-        methodOffset = 0;
-        showThreadInfo = true;
-    }
-
-    public static void setSettings(boolean debug, boolean isShowThreadInfo, int methodCount1, int offset) {
-        isDebug = debug;
-        showThreadInfo = isShowThreadInfo;
-        if (methodCount1 < 0) {
-            methodCount1 = 0;
+    public static synchronized void clearLogText(Date date) {
+        String fileName = getLogFileName(date);
+        FileOutputStream outputStream = null;
+        try {
+            outputStream = mContext.openFileOutput(fileName,
+                    Context.MODE_PRIVATE);
+            outputStream.write("".getBytes());
+            outputStream.flush();
+        } catch (Exception e) {
+            Log.e(TAG_DEFAULT, "清空日志异常", e);
+        } finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    Log.e(TAG_DEFAULT, "关闭日志文件异常", e);
+                }
+            }
         }
-        methodCount = methodCount1;
-        methodOffset = offset;
+    }
+
+    public static void cleanExpiredLogs(int expiredDays) {
+        File dir = mContext.getFilesDir();
+        File[] subFiles = dir.listFiles();
+        if (subFiles != null) {
+            int logFileCnt = 0;
+            int expiredLogFileCnt = 0;
+            long expiredTimeMillis = System.currentTimeMillis()
+                    - (expiredDays * DAY_MILLISECONDS);
+            for (File file : subFiles) {
+                if (file.getName().startsWith(TAG_DEFAULT)) {
+                    ++logFileCnt;
+                    if (file.lastModified() < expiredTimeMillis) {
+                        ++expiredLogFileCnt;
+                        boolean deleteResult = file.delete();
+                        if (deleteResult) {
+                            i(TAG_DEFAULT, "删除过期日志文件成功:" + file.getName());
+                        } else {
+                            e(TAG_DEFAULT, "删除过期日志文件失败:" + file.getName());
+                        }
+                    }
+                }
+            }
+            i(TAG_DEFAULT, "删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt
+                    + ", 过期日志文件数=" + expiredLogFileCnt);
+        }
     }
 }
