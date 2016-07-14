@@ -309,7 +309,7 @@ public final class XLog {
         message = headString + LINE_SEPARATOR + message;
         String[] lines = message.split(LINE_SEPARATOR);
         for (String line : lines) {
-            Log.d(tag, line);
+            Log.d(tag, "║ " +line);
         }
         Log.d(tag, "╚═══════════════════════════════════════════════════════════════════════════════════════");
     }
@@ -516,7 +516,7 @@ public final class XLog {
                     }
                 }
             }
-            i(mTag, "删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt
+            Log.i(mTag,"删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt
                     + ", 过期日志文件数=" + expiredLogFileCnt);
         }
     }
