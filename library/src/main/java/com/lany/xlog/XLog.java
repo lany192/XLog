@@ -322,14 +322,14 @@ public final class XLog {
 
     private static void printFile(String tag, File targetDirectory, String fileName, String headString, String msg) {
         fileName = (fileName == null) ? getLogFileName(new Date()) : fileName;
-        if (save(targetDirectory, fileName, msg)) {
+        if (save2File(targetDirectory, fileName, msg)) {
             Log.d(tag, headString + " save log success ! location is >>>" + targetDirectory.getAbsolutePath() + "/" + fileName);
         } else {
             Log.e(tag, headString + " save log fails !");
         }
     }
 
-    private static boolean save(File dic, String fileName, String msg) {
+    private static boolean save2File(File dic, String fileName, String msg) {
         File file = new File(dic, fileName);
         try {
             OutputStream outputStream = new FileOutputStream(file);
@@ -356,7 +356,7 @@ public final class XLog {
     private static String getLogFileName(Date date) {
         SimpleDateFormat sdf = new SimpleDateFormat(
                 "yyyy-MM-dd", Locale.getDefault());
-        return mTag + sdf.format(date) + ".txt";
+        return mTag + sdf.format(date) + ".log";
     }
 
     private static Context getAppContext() {
