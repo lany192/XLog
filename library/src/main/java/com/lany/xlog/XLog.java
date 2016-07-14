@@ -1,9 +1,7 @@
 package com.lany.xlog;
 
-
 import android.app.Application;
 import android.content.Context;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -385,13 +383,20 @@ public final class XLog {
         return mTag + simpleDateFormat.format(date) + ".txt";
     }
 
+    private static Context getAppContext() {
+        if (mContext == null) {
+            throw new IllegalArgumentException("XLog has not been initialized");
+        }
+        return mContext;
+    }
+
     private static synchronized void log2File(String level, String tag,
                                               String msg, Throwable tr) {
         Date now = new Date();
         String fileName = getLogFileName(now);
         FileOutputStream outputStream = null;
         try {
-            outputStream = mContext.openFileOutput(fileName,
+            outputStream = getAppContext().openFileOutput(fileName,
                     Context.MODE_PRIVATE | Context.MODE_APPEND);
             StringBuilder sb = new StringBuilder();
             sb.append(level);
@@ -434,7 +439,7 @@ public final class XLog {
         FileInputStream inputStream = null;
         StringBuilder sb = new StringBuilder();
         try {
-            inputStream = mContext.openFileInput(fileName);
+            inputStream = getAppContext().openFileInput(fileName);
             byte[] buffer = new byte[10240];
             while (true) {
                 int len = inputStream.read(buffer);
@@ -472,7 +477,7 @@ public final class XLog {
         String fileName = getLogFileName(date);
         FileOutputStream outputStream = null;
         try {
-            outputStream = mContext.openFileOutput(fileName,
+            outputStream = getAppContext().openFileOutput(fileName,
                     Context.MODE_PRIVATE);
             outputStream.write("".getBytes());
             outputStream.flush();
@@ -490,7 +495,7 @@ public final class XLog {
     }
 
     private static void deleteExpiredLogs(int expiredDays) {
-        File dir = mContext.getFilesDir();
+        File dir = getAppContext().getFilesDir();
         File[] subFiles = dir.listFiles();
         if (subFiles != null) {
             int logFileCnt = 0;
