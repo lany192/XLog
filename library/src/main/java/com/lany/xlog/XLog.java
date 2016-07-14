@@ -52,10 +52,10 @@ public final class XLog {
      * @param application
      * @param debug
      */
-    public static void init(Application application, boolean debug) {
+    public synchronized static void init(Application application, boolean debug) {
         mContext = application.getApplicationContext();
         DEBUG = debug;
-        deleteExpiredLogs(7);//7七天过期删除
+        deleteExpiredLogs(7);//7 day expired
     }
 
     public static void v(Object msg) {
