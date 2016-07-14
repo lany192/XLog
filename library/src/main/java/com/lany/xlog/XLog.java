@@ -367,13 +367,11 @@ public final class XLog {
 
     private static synchronized void log2File(String level, String tag, String msg, Throwable tr) {
         Date now = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat(
-                "HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         String fileName = getLogFileName(now);
         FileOutputStream fos = null;
         try {
-            fos = getAppContext().openFileOutput(fileName,
-                    Context.MODE_PRIVATE | Context.MODE_APPEND);
+            fos = getAppContext().openFileOutput(fileName, Context.MODE_PRIVATE | Context.MODE_APPEND);
             StringBuilder sb = new StringBuilder();
             sb.append(level);
             sb.append(" ");
@@ -453,8 +451,7 @@ public final class XLog {
         String fileName = getLogFileName(date);
         FileOutputStream outputStream = null;
         try {
-            outputStream = getAppContext().openFileOutput(fileName,
-                    Context.MODE_PRIVATE);
+            outputStream = getAppContext().openFileOutput(fileName, Context.MODE_PRIVATE);
             outputStream.write("".getBytes());
             outputStream.flush();
         } catch (Exception e) {
@@ -477,8 +474,7 @@ public final class XLog {
             int logFileCnt = 0;
             int expiredLogFileCnt = 0;
             final int DAY_MILLISECONDS = 24 * 60 * 60 * 1000;//one day
-            long expiredTimeMillis = System.currentTimeMillis()
-                    - (expiredDays * DAY_MILLISECONDS);
+            long expiredTimeMillis = System.currentTimeMillis() - (expiredDays * DAY_MILLISECONDS);
             for (File file : subFiles) {
                 if (file.getName().startsWith(TAG)) {
                     ++logFileCnt;
