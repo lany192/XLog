@@ -32,29 +32,21 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 public final class XLog {
-    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
-    public static final String NULL_TIPS = "Log with null object";
+    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    private static final String NULL_TIPS = "Log with null object";
     private static final String DEFAULT_MESSAGE = "execute";
     private static final String mTag = "XLog";
-    private static final String SUFFIX = ".java";
-    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-            "yyyy-MM-dd", Locale.getDefault());
-    private static SimpleDateFormat simpleTimeFormat = new SimpleDateFormat(
-            "HH:mm:ss", Locale.getDefault());
-    public static final int V = 0x1;
-    public static final int D = 0x2;
-    public static final int I = 0x3;
-    public static final int W = 0x4;
-    public static final int E = 0x5;
-    public static final int A = 0x6;
-    private static final int JSON = 0x7;
-    private static final int XML = 0x8;
+    private static final int V = 0x1;
+    private static final int D = 0x2;
+    private static final int I = 0x3;
+    private static final int W = 0x4;
+    private static final int E = 0x5;
+    private static final int A = 0x6;
+    private static final int J = 0x7;//json
+    private static final int X = 0x8;//xml
 
-    private static final int STACK_TRACE_INDEX = 5;
     private static boolean DEBUG = true;
-
     private static Context mContext;
-    private final static int DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
 
     public static void init(Application app, boolean debug) {
         mContext = app.getApplicationContext();
@@ -135,19 +127,19 @@ public final class XLog {
     }
 
     public static void json(String jsonFormat) {
-        printLog(JSON, null, jsonFormat);
+        printLog(J, null, jsonFormat);
     }
 
     public static void json(String tag, String jsonFormat) {
-        printLog(JSON, tag, jsonFormat);
+        printLog(J, tag, jsonFormat);
     }
 
     public static void xml(String xml) {
-        printLog(XML, null, xml);
+        printLog(X, null, xml);
     }
 
     public static void xml(String tag, String xml) {
-        printLog(XML, tag, xml);
+        printLog(X, tag, xml);
     }
 
     public static void file(File targetDirectory, Object msg) {
@@ -179,10 +171,10 @@ public final class XLog {
             case A:
                 printDefault(type, tag, headString + msg);
                 break;
-            case JSON:
+            case J:
                 printJson(tag, msg, headString);
                 break;
-            case XML:
+            case X:
                 printXml(tag, msg, headString);
                 break;
         }
@@ -200,6 +192,8 @@ public final class XLog {
     }
 
     private static String[] wrapperContent(String tagStr, Object... objects) {
+        final int STACK_TRACE_INDEX = 5;
+        final String SUFFIX = ".java";
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         StackTraceElement targetElement = stackTrace[STACK_TRACE_INDEX];
         String className = targetElement.getClassName();
@@ -309,7 +303,7 @@ public final class XLog {
         message = headString + LINE_SEPARATOR + message;
         String[] lines = message.split(LINE_SEPARATOR);
         for (String line : lines) {
-            Log.d(tag, "║ " +line);
+            Log.d(tag, "║ " + line);
         }
         Log.d(tag, "╚═══════════════════════════════════════════════════════════════════════════════════════");
     }
@@ -380,7 +374,9 @@ public final class XLog {
     }
 
     private static String getLogFileName(Date date) {
-        return mTag + simpleDateFormat.format(date) + ".txt";
+        SimpleDateFormat sdf = new SimpleDateFormat(
+                "yyyy-MM-dd", Locale.getDefault());
+        return mTag + sdf.format(date) + ".txt";
     }
 
     private static Context getAppContext() {
@@ -393,6 +389,8 @@ public final class XLog {
     private static synchronized void log2File(String level, String tag,
                                               String msg, Throwable tr) {
         Date now = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat(
+                "HH:mm:ss", Locale.getDefault());
         String fileName = getLogFileName(now);
         FileOutputStream outputStream = null;
         try {
@@ -401,7 +399,7 @@ public final class XLog {
             StringBuilder sb = new StringBuilder();
             sb.append(level);
             sb.append(" ");
-            sb.append(simpleTimeFormat.format(now));
+            sb.append(sdf.format(now));
             sb.append(" ");
             sb.append(tag);
             sb.append(" ");
@@ -500,6 +498,7 @@ public final class XLog {
         if (subFiles != null) {
             int logFileCnt = 0;
             int expiredLogFileCnt = 0;
+            final int DAY_MILLISECONDS = 24 * 60 * 60 * 1000;//one day
             long expiredTimeMillis = System.currentTimeMillis()
                     - (expiredDays * DAY_MILLISECONDS);
             for (File file : subFiles) {
@@ -516,7 +515,7 @@ public final class XLog {
                     }
                 }
             }
-            Log.i(mTag,"删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt
+            Log.i(mTag, "删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt
                     + ", 过期日志文件数=" + expiredLogFileCnt);
         }
     }
