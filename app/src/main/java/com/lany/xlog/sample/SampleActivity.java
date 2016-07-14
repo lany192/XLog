@@ -14,7 +14,7 @@ public class SampleActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
-        XLog.init(true);
+        XLog.init(getApplication(),true);
         //XLog.init(TAG);
         //XLog.setSettings(true, 3, 2);
         XLog.d("hello1");
