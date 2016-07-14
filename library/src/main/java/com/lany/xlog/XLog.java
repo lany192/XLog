@@ -34,7 +34,7 @@ import javax.xml.transform.stream.StreamSource;
 public final class XLog {
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     private static final String NULL_TIPS = "Log with null object";
-    private static final String mTag = "XLog";
+    private static final String TAG = "XLog";
     private static final int V = 0x1;
     private static final int D = 0x2;
     private static final int I = 0x3;
@@ -192,7 +192,7 @@ public final class XLog {
         String methodNameShort = methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
         String tag = (tagStr == null ? className : tagStr);
         if (TextUtils.isEmpty(tag)) {
-            tag = mTag;
+            tag = TAG;
         }
         String msg = (objects == null) ? NULL_TIPS : getObjectsString(objects);
         String headString = "[ (" + className + ":" + lineNumber + ")#" + methodNameShort + " ] ";
@@ -354,9 +354,8 @@ public final class XLog {
     }
 
     private static String getLogFileName(Date date) {
-        SimpleDateFormat sdf = new SimpleDateFormat(
-                "yyyy-MM-dd", Locale.getDefault());
-        return mTag + sdf.format(date) + ".log";
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return TAG + "_" + sdf.format(date) + ".log";
     }
 
     private static Context getAppContext() {
@@ -366,8 +365,7 @@ public final class XLog {
         return mContext;
     }
 
-    private static synchronized void log2File(String level, String tag,
-                                              String msg, Throwable tr) {
+    private static synchronized void log2File(String level, String tag, String msg, Throwable tr) {
         Date now = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat(
                 "HH:mm:ss", Locale.getDefault());
@@ -394,13 +392,13 @@ public final class XLog {
             outputStream.write(sb.toString().getBytes());
             outputStream.flush();
         } catch (Exception e) {
-            Log.e(mTag, "添加日志异常", e);
+            Log.e(TAG, "添加日志异常", e);
         } finally {
             if (outputStream != null) {
                 try {
                     outputStream.close();
                 } catch (IOException e) {
-                    Log.e(mTag, "关闭日志文件异常", e);
+                    Log.e(TAG, "关闭日志文件异常", e);
                 }
             }
         }
@@ -430,7 +428,7 @@ public final class XLog {
         } catch (FileNotFoundException e) {
             return "未找到对应的日志文件";
         } catch (Exception e) {
-            Log.e(mTag, "获取日志文本异常", e);
+            Log.e(TAG, "获取日志文本异常", e);
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw, true));
             return sw.toString();
@@ -439,7 +437,7 @@ public final class XLog {
                 try {
                     inputStream.close();
                 } catch (IOException e) {
-                    Log.e(mTag, "获取日志文本异常", e);
+                    Log.e(TAG, "获取日志文本异常", e);
                 }
             }
         }
@@ -460,13 +458,13 @@ public final class XLog {
             outputStream.write("".getBytes());
             outputStream.flush();
         } catch (Exception e) {
-            Log.e(mTag, "clear log file error", e);
+            Log.e(TAG, "clear log file error", e);
         } finally {
             if (outputStream != null) {
                 try {
                     outputStream.close();
                 } catch (IOException e) {
-                    Log.e(mTag, "close log file error", e);
+                    Log.e(TAG, "close log file error", e);
                 }
             }
         }
@@ -482,21 +480,20 @@ public final class XLog {
             long expiredTimeMillis = System.currentTimeMillis()
                     - (expiredDays * DAY_MILLISECONDS);
             for (File file : subFiles) {
-                if (file.getName().startsWith(mTag)) {
+                if (file.getName().startsWith(TAG)) {
                     ++logFileCnt;
                     if (file.lastModified() < expiredTimeMillis) {
                         ++expiredLogFileCnt;
                         boolean deleteResult = file.delete();
                         if (deleteResult) {
-                            i(mTag, "Delete expired log files successfully:" + file.getName());
+                            i(TAG, "Delete expired log files successfully:" + file.getName());
                         } else {
-                            e(mTag, "Delete expired log files failure:" + file.getName());
+                            e(TAG, "Delete expired log files failure:" + file.getName());
                         }
                     }
                 }
             }
-            Log.i(mTag, "删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt
-                    + ", 过期日志文件数=" + expiredLogFileCnt);
+            Log.i(TAG, "删除过期日志:文件总数=" + (subFiles.length) + ", 日志文件数=" + logFileCnt + ", 过期日志文件数=" + expiredLogFileCnt);
         }
     }
 }
