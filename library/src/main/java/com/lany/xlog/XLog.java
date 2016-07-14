@@ -370,9 +370,9 @@ public final class XLog {
         SimpleDateFormat sdf = new SimpleDateFormat(
                 "HH:mm:ss", Locale.getDefault());
         String fileName = getLogFileName(now);
-        FileOutputStream outputStream = null;
+        FileOutputStream fos = null;
         try {
-            outputStream = getAppContext().openFileOutput(fileName,
+            fos = getAppContext().openFileOutput(fileName,
                     Context.MODE_PRIVATE | Context.MODE_APPEND);
             StringBuilder sb = new StringBuilder();
             sb.append(level);
@@ -389,14 +389,14 @@ public final class XLog {
                 sb.append(sw.toString());
             }
             sb.append("\n");
-            outputStream.write(sb.toString().getBytes());
-            outputStream.flush();
+            fos.write(sb.toString().getBytes());
+            fos.flush();
         } catch (Exception e) {
             Log.e(TAG, "添加日志异常", e);
         } finally {
-            if (outputStream != null) {
+            if (fos != null) {
                 try {
-                    outputStream.close();
+                    fos.close();
                 } catch (IOException e) {
                     Log.e(TAG, "关闭日志文件异常", e);
                 }
@@ -412,19 +412,19 @@ public final class XLog {
      */
     public static synchronized String getLogText(Date date) {
         String fileName = getLogFileName(date);
-        FileInputStream inputStream = null;
+        FileInputStream fis = null;
         StringBuilder sb = new StringBuilder();
         try {
-            inputStream = getAppContext().openFileInput(fileName);
+            fis = getAppContext().openFileInput(fileName);
             byte[] buffer = new byte[10240];
             while (true) {
-                int len = inputStream.read(buffer);
+                int len = fis.read(buffer);
                 if (len <= 0) {
                     break;
                 }
                 sb.append(new String(buffer, 0, len));
             }
-            inputStream.close();
+            fis.close();
         } catch (FileNotFoundException e) {
             return "未找到对应的日志文件";
         } catch (Exception e) {
@@ -433,9 +433,9 @@ public final class XLog {
             e.printStackTrace(new PrintWriter(sw, true));
             return sw.toString();
         } finally {
-            if (inputStream != null) {
+            if (fis != null) {
                 try {
-                    inputStream.close();
+                    fis.close();
                 } catch (IOException e) {
                     Log.e(TAG, "获取日志文本异常", e);
                 }
