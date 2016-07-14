@@ -34,7 +34,6 @@ import javax.xml.transform.stream.StreamSource;
 public final class XLog {
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     private static final String NULL_TIPS = "Log with null object";
-    private static final String DEFAULT_MESSAGE = "execute";
     private static final String mTag = "XLog";
     private static final int V = 0x1;
     private static final int D = 0x2;
@@ -44,18 +43,19 @@ public final class XLog {
     private static final int A = 0x6;
     private static final int J = 0x7;//json
     private static final int X = 0x8;//xml
-
     private static boolean DEBUG = true;
     private static Context mContext;
 
-    public static void init(Application app, boolean debug) {
-        mContext = app.getApplicationContext();
+    /**
+     * init XLog
+     *
+     * @param application
+     * @param debug
+     */
+    public static void init(Application application, boolean debug) {
+        mContext = application.getApplicationContext();
         DEBUG = debug;
         deleteExpiredLogs(7);//7七天过期删除
-    }
-
-    public static void v() {
-        printLog(V, null, DEFAULT_MESSAGE);
     }
 
     public static void v(Object msg) {
@@ -66,20 +66,12 @@ public final class XLog {
         printLog(V, tag, objects);
     }
 
-    public static void d() {
-        printLog(D, null, DEFAULT_MESSAGE);
-    }
-
     public static void d(Object msg) {
         printLog(D, null, msg);
     }
 
     public static void d(String tag, Object... objects) {
         printLog(D, tag, objects);
-    }
-
-    public static void i() {
-        printLog(I, null, DEFAULT_MESSAGE);
     }
 
     public static void i(Object msg) {
@@ -90,10 +82,6 @@ public final class XLog {
         printLog(I, tag, objects);
     }
 
-    public static void w() {
-        printLog(W, null, DEFAULT_MESSAGE);
-    }
-
     public static void w(Object msg) {
         printLog(W, null, msg);
     }
@@ -102,20 +90,12 @@ public final class XLog {
         printLog(W, tag, objects);
     }
 
-    public static void e() {
-        printLog(E, null, DEFAULT_MESSAGE);
-    }
-
     public static void e(Object msg) {
         printLog(E, null, msg);
     }
 
     public static void e(String tag, Object... objects) {
         printLog(E, tag, objects);
-    }
-
-    public static void a() {
-        printLog(A, null, DEFAULT_MESSAGE);
     }
 
     public static void a(Object msg) {
